@@ -1,5 +1,7 @@
 var request = require('request');
 var secrets = require('./secrets.js');
+var fs = require('fs');
+argv = process.argv
 
 console.log("Welcome to the Github Avatar Downloader");
 
@@ -13,37 +15,45 @@ function getRepoContributors(repoOwner, repoName, cb) {
   };
 
   request(options, function(err, res, body) {
-    cb(err, body);
+    if (err) {
+      console.log(err);
+    }
+
+    if(cb) {
+      cb(err, body);
+    }
   });
 }
 
 
-function printAvatarURL(err, body) {
-  console.log("Errors:", err);
-  var parsedBody = JSON.parse(body);
+
+function downloadImageByURL(url, filePath) {
+  // console.log("test");
+  request.get(url)
+  .on('error', function (err) {
+    throw err;
+  })
+  .pipe(fs.createWriteStream(filePath));
+}
 
 
-  // console.log(parsedBody[0].avatar_url);
-
-  for (var i = 0; i < parsedBody.length; i++) {
-    console.log(parsedBody[i].avatar_url);
+function downloadAll(repoOwner, repoName) {
+  if (argv[2] === undefined || argv[3] === undefined) {
+    throw "Please enter both arguments";
+  } else {
+    getRepoContributors(repoOwner, repoName, function(err, body) {
+      var parsedBody = JSON.parse(body);
+      for (var i = 0; i < parsedBody.length; i++) {
+        downloadImageByURL(parsedBody[i].avatar_url, "avatars/"+parsedBody[i].login+".jpg");
+        console.log("downloading...");
+      }
+      console.log("download complete");
+    });
   }
 }
 
 
-getRepoContributors("jquery", "jquery", printAvatarURL);
-
-// getRepoContributors("jquery", "jquery", function(err, result) {
-//   console.log("Errors:", err);
-//   console.log("Result:", result);
-// });
-
-
-
-
-
-
-
+downloadAll(argv[2], argv[3]);
 
 
 
